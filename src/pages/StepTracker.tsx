@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import confetti from "canvas-confetti";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -94,7 +95,7 @@ const StepTracker = () => {
   const [goalReached, setGoalReached] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
   const [recommendation, setRecommendation] = useState(
-    "Based on your shopping history, Coles Finest Granola is on special this week — a great match for your usual picks!"
+    "Easter alert! Based on your shopping history, Coles Hot Cross Buns are back — and they're your perfect match. Hop to it!"
   );
   const [isLoadingRecommendation, setIsLoadingRecommendation] = useState(false);
   const [quests, setQuests] = useState<Quest[]>(DEMO_QUESTS);
@@ -118,7 +119,14 @@ const StepTracker = () => {
     if (steps >= stepGoal && !goalReached) {
       setGoalReached(true);
       setShowCelebration(true);
-      toast.success("Goal reached!", { description: "You've unlocked your reward!" });
+      // Burst confetti from both sides then a final centre shower
+      const colors = ["#ef4444", "#facc15", "#3b82f6", "#22c55e", "#ec4899", "#f97316"];
+      confetti({ particleCount: 80, spread: 70, origin: { x: 0.2, y: 0.55 }, colors });
+      confetti({ particleCount: 80, spread: 70, origin: { x: 0.8, y: 0.55 }, colors });
+      setTimeout(() => {
+        confetti({ particleCount: 120, spread: 100, origin: { x: 0.5, y: 0.4 }, colors });
+      }, 300);
+
       setTimeout(() => {
         setShowCelebration(false);
         clearTripSession();
@@ -358,10 +366,9 @@ const StepTracker = () => {
 
       {/* ── Goal Reached Celebration Overlay ── */}
       {showCelebration && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 animate-fade-in pointer-events-none">
           <div className="text-center space-y-4 animate-celebration">
-            <div className="text-8xl">🎉</div>
-            <div className="text-white text-3xl font-bold drop-shadow">Goal Reached!</div>
+            <div className="text-white text-3xl font-bold drop-shadow-lg">Goal Reached!</div>
             <div className="text-white/80 text-xl tabular-nums">
               {steps.toLocaleString()} steps
             </div>

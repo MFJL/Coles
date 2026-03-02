@@ -1,19 +1,119 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Search, User, List, ShoppingCart, Menu, Sparkles, Footprints, Scan, Heart } from "lucide-react";
+import {
+  Search,
+  ChevronRight,
+  Home,
+  List,
+  ShoppingBag,
+  ShoppingCart,
+  MoreHorizontal,
+  Footprints,
+  Clock,
+  Info,
+} from "lucide-react";
 import { toast } from "sonner";
+
+// ── Bottom tab bar ─────────────────────────────────────────────────────────────
+
+interface TabItem {
+  icon: React.ReactNode;
+  label: string;
+  active?: boolean;
+  onClick?: () => void;
+}
+
+function BottomTabBar({ tabs }: { tabs: TabItem[] }) {
+  return (
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200">
+      <div className="flex items-stretch h-[58px]">
+        {tabs.map((tab, i) => (
+          <button
+            key={i}
+            onClick={tab.onClick}
+            className={`flex-1 flex flex-col items-center justify-center gap-[2px] text-[10px] font-medium transition-colors ${
+              tab.active ? "text-red-600" : "text-gray-500"
+            }`}
+          >
+            <span className={tab.active ? "text-red-600" : "text-gray-400"}>
+              {tab.icon}
+            </span>
+            {tab.label}
+          </button>
+        ))}
+      </div>
+    </nav>
+  );
+}
+
+// ── App header ─────────────────────────────────────────────────────────────────
+
+function AppHeader() {
+  return (
+    <div className="bg-white border-b border-gray-100">
+      {/* Delivery mode selector */}
+      <div className="px-4 pt-3 pb-2 flex items-center gap-2">
+        <button className="bg-gray-900 text-white text-xs font-semibold rounded-full px-4 py-1.5">
+          In store
+        </button>
+        <button className="text-xs font-medium text-gray-600 px-3 py-1.5">
+          Click &amp; Collect
+        </button>
+        <button className="text-xs font-medium text-gray-600 px-3 py-1.5">
+          Delivery
+        </button>
+      </div>
+
+      {/* Store selector */}
+      <div className="px-4 pb-2">
+        <button className="flex items-center gap-1.5 text-sm text-gray-800">
+          <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="#dc2626">
+            <path d="M3 9.5L12 3l9 6.5V21a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z" opacity="0.2"/>
+            <path d="M3 9.5L12 3l9 6.5M9 21V12h6v9" stroke="#dc2626" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+            <rect x="9" y="12" width="6" height="9" fill="#dc2626" opacity="0.9"/>
+            <path d="M3 9.5L12 3l9 6.5V21a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z" stroke="#dc2626" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          <span className="font-medium">Coles Tuggeranong</span>
+        </button>
+      </div>
+
+      {/* Search bar — light grey background like real Coles app */}
+      <div className="px-4 pb-3">
+        <div className="flex items-center gap-2 rounded-lg px-3 py-2.5" style={{ backgroundColor: "#F5F5F5" }}>
+          <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
+          <span className="flex-1 text-sm text-gray-400">Search for products</span>
+          <img src="/barcode.png" alt="Scan barcode" className="w-5 h-5 object-contain opacity-60" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Shared category circle wrapper ─────────────────────────────────────────────
+// Every icon sits in a w-14 h-14 grey circle — same treatment for all categories.
+
+function CategoryCircle({ src, alt }: { src: string; alt: string }) {
+  return (
+    <div
+      className="w-14 h-14 rounded-full flex items-center justify-center overflow-hidden"
+      style={{ backgroundColor: "#F0F0F0" }}
+    >
+      <img src={src} alt={alt} className="w-10 h-10 object-contain" />
+    </div>
+  );
+}
+
+// ── Main component ─────────────────────────────────────────────────────────────
 
 const Welcome = () => {
   const navigate = useNavigate();
 
-  // Clear in-progress session state on landing so each demo run starts clean.
+  // Clear in-progress session state on landing so each demo run starts fresh.
   // impactHistory is preserved so the Dashboard shows cumulative impact.
   useEffect(() => {
-    localStorage.removeItem('stepGoal');
-    localStorage.removeItem('selectedCharity');
-    localStorage.removeItem('currentSteps');
+    localStorage.removeItem("stepGoal");
+    localStorage.removeItem("selectedCharity");
+    localStorage.removeItem("currentSteps");
   }, []);
 
   const handleFullReset = () => {
@@ -21,232 +121,251 @@ const Welcome = () => {
     toast.success("Demo reset — all data cleared");
   };
 
-  const categories = [
-    { icon: "🛒", label: "Bought before", color: "bg-blue-600" },
-    { icon: "🏷️", label: "My Offers", color: "bg-blue-600", badge: "flybuys" },
-    { icon: "⭐", label: "Specials", color: "bg-white", border: true },
-    { icon: "🥬", label: "Fresh Specials", color: "bg-white", border: true },
-    { icon: "🎉", label: "Bonus Points", color: "bg-pink-600", badge: "BONUS" },
-    { icon: "💰", label: "Every Day Value" },
-    { icon: "🍖", label: "Meat & Seafood" },
-    { icon: "🥐", label: "Bakery" },
+  // Pull Walk & Give points from localStorage history
+  const history = (() => {
+    try { return JSON.parse(localStorage.getItem("impactHistory") || "[]"); }
+    catch { return []; }
+  })();
+  const walkGivePoints = history.reduce(
+    (sum: number, item: { points?: number }) => sum + (item.points || 0),
+    0
+  );
+  // Simulated Flybuys total — Walk & Give sits within it
+  const flybuysTotal = 1624 + walkGivePoints;
+  const flybuysValue = (flybuysTotal / 200).toFixed(2);
+
+  // ── Tabs — real Coles app tabs ─────────────────────────────────────────────
+  const tabs: TabItem[] = [
+    { icon: <Home className="w-5 h-5" />, label: "Home", active: true },
+    { icon: <List className="w-5 h-5" />, label: "Lists" },
+    { icon: <ShoppingBag className="w-5 h-5" />, label: "Products" },
+    { icon: <ShoppingCart className="w-5 h-5" />, label: "Trolley" },
+    { icon: <MoreHorizontal className="w-5 h-5" />, label: "More" },
+  ];
+
+  // ── Category rows — matches real Coles app order ───────────────────────────
+  // Row 1: Bought Before, Down Down, Bonus Credit Products, Meat & Seafood
+  // Row 2: Fruit & Vegetables, Dairy Eggs & Fridge, Bakery, Deli
+  const categoryRows = [
+    [
+      { src: "/Bought%20Before.png", alt: "Bought before", label: "Bought before" },
+      { src: "/DownDown.png",        alt: "Down Down",     label: "Down Down" },
+      { src: "/BonusCreditProducts.png", alt: "Bonus Credit Products", label: "Bonus Credit\nProducts" },
+      { src: "/Meat&Seafood.png",  alt: "Meat & Seafood", label: "Meat & Seafood" },
+    ],
+    [
+      { src: "/Banana.png",          alt: "Fruit & Vegetables", label: "Fruit &\nVegetables" },
+      { src: "/dairy-products.png",  alt: "Dairy, Eggs & Fridge", label: "Dairy, Eggs\n& Fridge" },
+      { src: "/Bakery.png",          alt: "Bakery",         label: "Bakery" },
+      { src: "/Deli.png",            alt: "Deli",           label: "Deli" },
+    ],
   ];
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Top Banner */}
-      <div className="bg-red-600 text-white text-center py-2 px-4 text-sm font-medium">
-        Walk & Give — Earn Flybuys points every time you shop in-store
-      </div>
+    <div className="min-h-screen bg-gray-50 pb-[58px]">
 
- {/* Header */}
-      <header className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 py-3">
-          <div className="flex items-center justify-between gap-2 md:gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-white-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                <span className="text-white font-bold text-xl"></span>
+      {/* ── Top header ── */}
+      <AppHeader />
+
+      <div className="space-y-2">
+
+        {/* ── Browse products + category circles ── */}
+        <div className="bg-white">
+          <div className="px-4 pt-4 pb-2 flex items-center justify-between">
+            <span className="font-bold text-gray-900 text-base">Browse products</span>
+            <button className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center">
+              <ChevronRight className="w-4 h-4 text-gray-500" />
+            </button>
+          </div>
+
+          {/* Category grid — 2 rows, 4 across */}
+          <div className="px-4 pb-4">
+            {categoryRows.map((row, ri) => (
+              <div key={ri} className={`grid grid-cols-4 gap-2 ${ri > 0 ? "mt-4" : ""}`}>
+                {row.map((cat, ci) => (
+                  <button key={ci} className="flex flex-col items-center gap-1.5">
+                    <CategoryCircle src={cat.src} alt={cat.alt} />
+                    <span className="text-[10px] text-gray-700 text-center leading-tight font-medium w-full whitespace-pre-line">
+                      {cat.label}
+                    </span>
+                  </button>
+                ))}
               </div>
-              <span className="font-bold text-xl text-red-600 hidden sm:inline">
-                
+            ))}
+          </div>
+        </div>
+
+        {/* ── Coles barcode / scan your barcode block ── */}
+        <div className="bg-white px-4 py-4">
+          <img src="/Coles_logo.svg" alt="Coles" className="h-6 mb-2" />
+          <p className="text-xs text-gray-600 leading-snug">
+            Scan your Coles barcode to personalise your shopping preferences. To access your barcode, link to your Flybuys account.
+          </p>
+          <button className="mt-3 w-full bg-red-600 text-white font-semibold rounded-full py-3 text-sm flex items-center justify-center gap-2">
+            <img src="/barcode.png" alt="" className="w-5 h-5 object-contain invert" />
+            Scan your barcode
+          </button>
+        </div>
+
+        {/* ── Flybuys widget — two separate cards side by side ── */}
+        <div className="bg-white px-4 pt-4 pb-3">
+          <div className="flex gap-2">
+            {/* Left card: Flybuys logo + View card link */}
+            <div className="flex-1 border border-gray-200 rounded-xl p-3 flex flex-col items-center justify-center gap-3">
+              <img src="/flybuys.png" alt="Flybuys" className="h-9 w-auto object-contain" />
+              <button className="text-sm font-medium text-gray-900 underline underline-offset-2">View card</button>
+            </div>
+
+            {/* Right card: points balance + offers */}
+            <div className="flex-1 border border-gray-200 rounded-xl p-3 space-y-1">
+              <div className="text-xl font-bold text-gray-900 tabular-nums leading-none">
+                {flybuysTotal.toLocaleString()} pts
+              </div>
+              <div className="text-xs text-gray-500">
+                worth ${flybuysValue} Flybuys dollars
+              </div>
+              <div className="flex items-center gap-2 pt-0.5">
+                <span className="bg-blue-600 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                  7 offers
+                </span>
+                <button className="text-xs font-medium text-gray-900 underline underline-offset-2">View offers</button>
+              </div>
+            </div>
+          </div>
+
+          {/* Walk & Give subsection — shown when user has earned points */}
+          {walkGivePoints > 0 && (
+            <div className="mt-3 pt-3 border-t border-gray-100 flex items-center gap-1.5">
+              <Footprints className="w-3.5 h-3.5 text-red-600 flex-shrink-0" />
+              <span className="text-xs text-gray-600">
+                Includes <span className="font-semibold">{walkGivePoints} pts</span> from Walk &amp; Give
               </span>
             </div>
+          )}
 
-            <div className="flex-1 max-w-2xl">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  className="w-full border border-gray-300 rounded-lg py-2 px-3 md:px-4 pr-10 text-sm md:text-base"
-                />
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <div className="mt-2 flex items-center gap-1">
+            <Clock className="w-3 h-3 text-gray-400" />
+            <p className="text-[10px] text-gray-400">Flybuys points may take 24 hours to update</p>
+          </div>
+        </div>
+
+        {/* ── Promotional cards ── */}
+        <div className="px-3 space-y-3 pt-1">
+
+          {/* Walk & Give Easter card — main entry point */}
+          <div className="rounded-2xl overflow-hidden bg-red-600 text-white">
+            <div className="p-5 flex items-start justify-between gap-3">
+              <div className="flex-1 space-y-2">
+                <span className="inline-block text-xs font-semibold bg-white/20 rounded-full px-2.5 py-0.5 uppercase tracking-wide">
+                  Easter Special
+                </span>
+                <h2 className="text-xl font-bold leading-snug">
+                  Walk &amp; Give this Easter —<br />Earn 2× bonus Flybuys<br />points in-store
+                </h2>
+                <p className="text-sm text-white/80">
+                  Every step counts. Walk, scan Easter favourites, and choose to keep your points or give back this Easter.
+                </p>
+                <button
+                  onClick={() => navigate("/onboarding")}
+                  className="mt-1 inline-flex bg-white text-red-600 font-bold text-sm rounded-full px-5 py-2 hover:bg-gray-50 transition-colors"
+                >
+                  Start your Easter trip
+                </button>
+              </div>
+              <div className="flex-shrink-0 w-24 h-24 flex items-end justify-center">
+                <img src="/easter-bunny.png" alt="Easter bunny" className="w-24 h-24 object-contain drop-shadow-lg" />
               </div>
             </div>
+          </div>
 
-            <div className="flex items-center gap-2 md:gap-4">
-              <button className="hidden md:flex flex-col items-center text-xs text-gray-600">
-                <Menu className="w-6 h-6" />
-                <span>More</span>
-              </button>
-              <button className="flex flex-col items-center text-xs text-gray-600">
-                <User className="w-6 h-6" />
-                <span className="hidden md:inline">Account</span>
-              </button>
-              <button className="hidden md:flex flex-col items-center text-xs text-gray-600">
-                <List className="w-6 h-6" />
-                <span>Lists</span>
-              </button>
-              <button className="flex flex-col items-center text-xs text-gray-600">
-                <ShoppingCart className="w-6 h-6" />
-                <span className="hidden md:inline">$0.00</span>
-              </button>
+          {/* Easter Egg Hunt card */}
+          <div className="rounded-2xl overflow-hidden bg-red-700 text-white">
+            <div className="p-5 flex items-start justify-between gap-3">
+              <div className="flex-1 space-y-2">
+                <span className="text-xs font-semibold bg-white/20 rounded-full px-2 py-0.5 uppercase tracking-wide">
+                  Easter Egg Hunt
+                </span>
+                <h2 className="text-lg font-bold leading-snug">
+                  Scan Easter products<br />for bonus points
+                </h2>
+                <p className="text-sm text-white/80">
+                  Hot cross buns, chocolate eggs and more — scan to unlock extra Flybuys points this week.
+                </p>
+              </div>
+              <div className="flex-shrink-0 w-20 h-20 flex items-center justify-center">
+                <img src="/easter-eggs.png" alt="Easter eggs" className="w-20 h-20 object-contain drop-shadow" />
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Navigation */}
-        <div className="hidden md:flex border-b bg-white">
-          <div className="max-w-7xl mx-auto px-4 py-2 flex items-center gap-6 text-sm">
-            <button className="flex items-center gap-1 font-medium">
-              <Menu className="w-4 h-4" />
-              Shop products
-            </button>
-            <button>Specials & catalogues</button>
-            <button>Bought before</button>
-            <button>Recipes & inspiration</button>
-            <button>Ways to shop</button>
-            <button>Help</button>
-            <div className="ml-auto flex items-center gap-2">
-              <span className="font-semibold">coles</span>
-              <span className="text-red-600">plus</span>
-              <Badge className="bg-red-600">Free trial</Badge>
+          {/* $5 off card */}
+          <div className="rounded-2xl overflow-hidden bg-red-600 text-white">
+            <div className="p-5 flex items-center gap-4">
+              <div className="flex-shrink-0 w-16 h-16 rounded-full bg-white flex flex-col items-center justify-center shadow-md">
+                <span className="text-red-600 font-black text-base leading-none">$5</span>
+                <span className="text-red-600 font-bold text-[9px] uppercase leading-tight">OFF</span>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-white text-base leading-snug">
+                  Get $5 off selected<br />products when you<br />spend $15*
+                </h3>
+                <p className="text-xs text-white/70 mt-1">Valid on first online shop. T&amp;Cs apply.</p>
+              </div>
             </div>
-            <button className="flex items-center gap-2 border border-gray-300 rounded-full px-3 py-1">
-              <span className="w-2 h-2 bg-red-600 rounded-full"></span>
-              Click & Collect
-              <span className="text-xs">Canberra</span>
-            </button>
           </div>
-        </div>
-      </header>
 
-      {/* Category Icons */}
-      <div className="bg-gray-50 border-b overflow-x-auto">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex gap-4 items-center">
-            {categories.map((cat, idx) => (
-              <button key={idx} className="flex flex-col items-center gap-2 min-w-[80px]">
-                <div className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl ${
-                  cat.color || 'bg-gray-200'
-                } ${cat.border ? 'border-2 border-gray-300' : ''}`}>
-                  {cat.badge && cat.badge === 'flybuys' && (
-                    <span className="text-xs text-white">flybuys</span>
-                  )}
-                  {cat.badge && cat.badge === 'BONUS' && (
-                    <span className="text-xs text-white">BONUS</span>
-                  )}
-                  {!cat.badge && cat.icon}
-                </div>
-                <span className="text-xs text-center">{cat.label}</span>
-              </button>
-            ))}
-            <button className="text-gray-400">›</button>
+          {/* Half-price specials card */}
+          <div className="rounded-2xl overflow-hidden bg-yellow-400">
+            <div className="p-5 flex items-center gap-4">
+              <div className="flex-shrink-0 w-16 h-16 rounded-full bg-white border-4 border-yellow-600 flex flex-col items-center justify-center">
+                <span className="text-gray-900 font-black text-[10px] leading-tight text-center">
+                  1/2<br />PRICE
+                </span>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-gray-900 text-base leading-snug">
+                  Shop this week's<br />half-price specials.
+                </h3>
+                <p className="text-sm text-gray-700 mt-0.5">Specials change every week.</p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        {/* ── Explore more offers row ── */}
+        <div className="bg-white mx-0 px-4 py-3 flex items-center justify-between">
+          <span className="font-bold text-gray-900">Explore more offers</span>
+          <button className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center">
+            <ChevronRight className="w-4 h-4 text-gray-500" />
+          </button>
+        </div>
+
+        {/* ── T&Cs ── */}
+        <div className="px-4 py-2">
+          <div className="flex items-start gap-1.5">
+            <Info className="w-3 h-3 text-gray-400 mt-0.5 flex-shrink-0" />
+            <p className="text-[10px] text-gray-400 leading-relaxed">
+              *Walk &amp; Give: Earn points by walking in-store. Valid for Flybuys members. Points awarded on eligible activity only. T&amp;Cs apply. $5 off: Valid on first online shop. Min spend $15. One redemption per customer. Exclusions apply.
+            </p>
           </div>
         </div>
+
+        {/* ── Footer ── */}
+        <div className="py-6 text-center space-y-2">
+          <p className="text-xs text-gray-400">MasterTech Project By Innovation Central Canberra</p>
+          <button
+            onClick={handleFullReset}
+            className="text-[10px] text-gray-300 hover:text-gray-400 transition-colors"
+          >
+            Reset demo
+          </button>
+        </div>
+
       </div>
 
-      {/* Walk & Give Campaign Widget */}
-      <div className="bg-gradient-to-br from-red-600 via-red-700 to-red-800 relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 py-8 md:py-12 relative z-10">
-          <div className="flex flex-col lg:flex-row items-center justify-between gap-8">
-            {/* Left Content */}
-            <div className="flex-1 text-white space-y-6 text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full">
-                <Sparkles className="w-4 h-4" />
-                <span className="text-sm font-medium">Walk & Give</span>
-                <Badge className="bg-green-500 text-white border-none text-xs">
-                  New
-                </Badge>
-              </div>
-
-              <h1 className="text-4xl md:text-5xl font-bold leading-tight">
-                Walk, Scan & Give<br/>every shop.
-              </h1>
-
-              <p className="text-base md:text-lg text-white/90 max-w-xl mx-auto lg:mx-0">
-                Earn bonus Flybuys points by walking in-store and scanning products.
-                Or donate your rewards to a charity that matters to you.
-              </p>
-
-              {/* Feature Cards */}
-              <div className="bg-white/10 backdrop-blur-md rounded-xl p-5 space-y-3 max-w-xl mx-auto lg:mx-0">
-                <div className="flex items-center gap-3 text-left">
-                  <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center flex-shrink-0">
-                    <Scan className="w-5 h-5 text-red-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold">Scan & Earn</h3>
-                    <p className="text-sm text-white/80">Scan products on your personalised quest list to unlock bonus points</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 text-left">
-                  <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center flex-shrink-0">
-                    <Heart className="w-5 h-5 text-red-600" fill="currentColor" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold">Walk & Give</h3>
-                    <p className="text-sm text-white/80">Hit your step goal and choose to keep your points or donate to charity</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 text-left">
-                  <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center flex-shrink-0">
-                    <Footprints className="w-5 h-5 text-red-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold">Every Step Counts</h3>
-                    <p className="text-sm text-white/80">The more you walk, the more you earn — for you or your community</p>
-                  </div>
-                </div>
-              </div>
-
-              <Button
-                onClick={() => navigate('/onboarding')}
-                size="lg"
-                className="bg-white text-red-600 font-bold hover:bg-gray-50 w-full sm:w-auto"
-              >
-                Start Shopping & Earning
-              </Button>
-
-              <p className="text-xs text-white/70">
-                *Walk in-store and scan products to unlock rewards. Valid for Flybuys members.
-              </p>
-            </div>
-
-            {/* Right - Rewards Circles */}
-            <div className="hidden lg:flex gap-6 items-center">
-              <div className="text-center animate-bounce" style={{ animationDelay: '0s', animationDuration: '2s' }}>
-                <div className="w-36 h-36 bg-blue-600 rounded-full flex flex-col items-center justify-center shadow-2xl">
-                  <p className="text-xs text-white/80">flybuys</p>
-                  <p className="text-4xl font-bold text-white">3,000</p>
-                  <p className="text-[10px] text-white/70">BONUS<br/>POINTS</p>
-                </div>
-                <p className="text-white text-sm mt-3">When you spend<br/><span className="font-bold text-lg">$200</span></p>
-              </div>
-
-              <div className="text-center animate-bounce" style={{ animationDelay: '0.2s', animationDuration: '2s' }}>
-                <div className="w-36 h-36 bg-blue-700 rounded-full flex flex-col items-center justify-center shadow-2xl">
-                  <p className="text-xs text-white/80">flybuys</p>
-                  <p className="text-4xl font-bold text-white">5,000</p>
-                  <p className="text-[10px] text-white/70">BONUS<br/>POINTS</p>
-                </div>
-                <p className="text-white text-sm mt-3">When you spend<br/><span className="font-bold text-lg">$250</span></p>
-              </div>
-
-              <div className="text-center animate-bounce" style={{ animationDelay: '0.4s', animationDuration: '2s' }}>
-                <div className="w-36 h-36 bg-blue-800 rounded-full flex flex-col items-center justify-center shadow-2xl">
-                  <p className="text-xs text-white/80">flybuys</p>
-                  <p className="text-4xl font-bold text-white">8,000</p>
-                  <p className="text-[10px] text-white/70">BONUS<br/>POINTS</p>
-                </div>
-                <p className="text-white text-sm mt-3">When you spend<br/><span className="font-bold text-lg">$350</span></p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* More content sections would go here */}
-      <div className="py-12 text-center text-gray-500 space-y-2">
-        <p>MasterTech Project By Innovation Central Canberra</p>
-        <button
-          onClick={handleFullReset}
-          className="text-xs text-gray-300 hover:text-gray-400 transition-colors"
-        >
-          Reset demo
-        </button>
-      </div>
+      {/* ── Fixed bottom tab bar ── */}
+      <BottomTabBar tabs={tabs} />
     </div>
   );
 };
