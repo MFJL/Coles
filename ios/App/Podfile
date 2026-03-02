@@ -5,7 +5,7 @@ use_frameworks!
 
 # workaround to avoid Xcode caching of Pods that requires
 # Product -> Clean Build Folder after new Cordova plugins installed
-# Requires CocoaPods 1.6 or newer
+# Requires CocoaPods 1.6 or newe
 install! 'cocoapods', :disable_input_output_paths => true
 
 def capacitor_pods
@@ -21,4 +21,4 @@ end
 
 post_install do |installer|
   assertDeploymentTarget(installer)
-end
+end 
